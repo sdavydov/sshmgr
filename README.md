@@ -1,7 +1,7 @@
 ## Установка
 #### Установить утилиты jq sshpass whiptail 
 ```
-$ sudo apt-get -y install jq sshpass whiptail
+$ sudo apt-get update && sudo apt-get install -y jq sshpass whiptail
 
 ```
 
