@@ -1,0 +1,92 @@
+#!/bin/bash
+PATH_TO_JSON="/path/to/json/ssh-list.json"
+
+if [ ! -e $PATH_TO_JSON ]; then
+  echo "==>ERR: File $PATH_TO_JSON is not found. Make sure that file exist"
+  exit 1
+fi
+
+if [ ! -z "$1" ]; then
+  while :
+  do
+      case "$1" in
+        -n | --name)
+  	  NAME="$2"
+  	  shift 2
+  	  ;;
+        -p | --password)
+      PASS="$2"
+      shift 2
+  	  ;;
+        -k | --key)
+      KEY="$2"
+      shift 2
+      ;;
+        -u | --user)
+      USER_NAME="$2"
+  	  shift 2
+  	  ;;
+        -s | --server)
+      SERVER="$2"
+      shift 2
+      ;;
+        -h | --help)
+      echo "   -n --name      -Add name server"
+      echo "   -p --password  -Add user password"
+      echo "   -k --key       -Add path to ssh key"
+      echo "   -u --user      -Add user name"
+      echo "   -s --server    -Add IP or DNS name of server"
+      echo " Examples:"
+      echo "   sshmgr -n NameServer -p Password -k PathToSshKey -u UserName -n IP"
+      echo "   sshmgr -n NameServer -k PathToSshKey -u UserName -n IP"
+      echo "   sshmgr -n NameServer -p Password -u UserName -n IP"
+  	  shift
+  	  ;;
+        --) # End of all options
+  	  shift
+  	  break
+      ;;
+        -*)
+  	  echo "Error: Unknown option: $1" >&2
+  	  exit 1
+  	  ;;
+        *)  # No more options
+  	  break
+  	  ;;
+      esac
+  done
+
+  if [ ! -z "$NAME" ]; then
+    JSON_DATA=",{\n  \"name\": \"$NAME\", \n  \"pass\": \"$PASS\", \n  \"key\": \"$KEY\", \n  \"user\": \"$USER_NAME\", \n  \"server\": \"$SERVER\" \n }"
+    sed -i "/]/i $JSON_DATA" $PATH_TO_JSON
+  fi
+  
+  exit 0
+fi
+
+getJsonData(){
+  local INDEX=$1
+  local FIELD_NAME=$2
+  echo $(cat $PATH_TO_JSON | jq ".[$INDEX].$FIELD_NAME" | tr -d "\"")
+}
+
+COUNTER=0
+LIST=()
+ while [ $COUNTER -lt $(cat $PATH_TO_JSON | jq '. | length') ]; do
+    LIST+=("$(($COUNTER+1))")
+    LIST+=("$(getJsonData $COUNTER name)")
+    let COUNTER+=1
+ done
+
+OPT=$(whiptail --title "Servers" --menu "" 30 78 20 "${LIST[@]}"  3>&2 2>&1 1>&3)
+OPT=$(($OPT-1))
+
+if [ "$OPT" -ge 0 ]; then
+  if [ "$(getJsonData $OPT key)" != "" ];then
+    echo "==> Login by key"
+    ssh -i $(getJsonData $OPT key) $(getJsonData $OPT user)@$(getJsonData $OPT server)
+  else
+    echo "==> Login by password"
+    sshpass -p $(getJsonData $OPT pass) ssh $(getJsonData $OPT user)@$(getJsonData $OPT server)
+  fi
+fi

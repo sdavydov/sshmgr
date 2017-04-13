@@ -1,0 +1,16 @@
+[
+  {
+   "name": "debian-server",
+   "pass": "123",
+   "key": "",
+   "user": "user",
+   "server": "127.0.0.1"
+  }
+ ,{
+   "name": "ubuntu-server",
+   "pass": "",
+   "key": "/home/user/.ssh/key",
+   "user": "root",
+   "server": "127.0.0.1"
+  }
+]
